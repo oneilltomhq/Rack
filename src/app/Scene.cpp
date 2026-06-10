@@ -13,6 +13,7 @@
 #include <settings.hpp>
 #include <patch.hpp>
 #include <asset.hpp>
+#include <agent.hpp>
 
 
 namespace rack {
@@ -89,6 +90,9 @@ math::Vec Scene::getMousePos() {
 
 
 void Scene::step() {
+	if (agent::isRunning())
+		agent::process();
+
 	if (APP->window->isFullScreen()) {
 		// Expand RackScrollWidget to cover entire screen if fullscreen
 		rackScroll->box.pos.y = 0;

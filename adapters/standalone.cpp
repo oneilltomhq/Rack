@@ -23,6 +23,7 @@
 #include <string.hpp>
 #include <library.hpp>
 #include <network.hpp>
+#include <agent.hpp>
 
 #include <getopt.h>
 #include <unistd.h> // for getopt
@@ -71,6 +72,7 @@ int main(int argc, char* argv[]) {
 	std::string patchPath;
 	bool screenshot = false;
 	float screenshotZoom = 1.f;
+	bool agentControl = false;
 	const std::string appInfo = APP_NAME + " " + APP_EDITION_NAME + " " + APP_VERSION + " " + APP_OS_NAME + " " + APP_CPU_NAME;
 
 	// Parse command line arguments
@@ -81,6 +83,7 @@ int main(int argc, char* argv[]) {
 		{"screenshot", required_argument, NULL, 't'},
 		{"system", required_argument, NULL, 's'},
 		{"user", required_argument, NULL, 'u'},
+		{"agent-control", no_argument, NULL, 257},
 		{"version", no_argument, NULL, 'v'},
 		{"help", no_argument, NULL, 256},
 		{NULL, 0, NULL, 0}
@@ -118,6 +121,9 @@ int main(int argc, char* argv[]) {
 				std::fprintf(stderr, "https://vcvrack.com/manual/Installing#Command-line-usage\n");
 				return 0;
 			}
+			case 257: {
+				agentControl = true;
+			} break;
 			// Mac "app translocation" passes a nonsense -psn_... flag, so -p is reserved.
 			case 'p': break;
 			default: break;
@@ -261,11 +267,23 @@ int main(int argc, char* argv[]) {
 	}
 
 	APP->engine->startFallbackThread();
+	if (agentControl) {
+		INFO("Starting agent stdio control");
+		agent::startStdio();
+	}
 
 	// Run context
 	if (settings::headless) {
-		printf("Press enter to exit.\n");
-		getchar();
+		if (agentControl) {
+			while (agent::isRunning()) {
+				agent::process();
+				system::sleep(0.01);
+			}
+		}
+		else {
+			printf("Press enter to exit.\n");
+			getchar();
+		}
 	}
 	else if (screenshot) {
 		INFO("Taking screenshots of all modules at %gx zoom", screenshotZoom);
@@ -285,6 +303,10 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Destroy context
+	if (agentControl) {
+		INFO("Stopping agent stdio control");
+		agent::stop();
+	}
 	INFO("Deleting context");
 	delete APP;
 	contextSet(NULL);
