@@ -104,6 +104,22 @@ STANDALONE_OBJECTS += $(TARGET)
 $(STANDALONE_TARGET): $(STANDALONE_SOURCES) $(STANDALONE_OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(STANDALONE_LDFLAGS)
 
+# Agent/headless control prototype
+
+RACKCTL_PROTO_SOURCES += adapters/rackctl-proto.cpp
+RACKCTL_PROTO_TARGET := rackctl-proto
+RACKCTL_PROTO_OBJECTS += $(TARGET)
+ifdef ARCH_LIN
+	RACKCTL_PROTO_LDFLAGS += -static-libstdc++ -static-libgcc
+	RACKCTL_PROTO_LDFLAGS += -Wl,-rpath=.
+endif
+ifdef ARCH_MAC
+	RACKCTL_PROTO_LDFLAGS += -stdlib=libc++
+endif
+
+$(RACKCTL_PROTO_TARGET): $(RACKCTL_PROTO_SOURCES) $(RACKCTL_PROTO_OBJECTS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(RACKCTL_PROTO_LDFLAGS)
+
 # Convenience targets
 
 all: $(TARGET) $(STANDALONE_TARGET)
